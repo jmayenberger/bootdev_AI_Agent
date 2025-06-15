@@ -1,25 +1,12 @@
 import os
 
 def get_files_info(working_directory, directory=""):
-    if not isinstance(working_directory, str):
-        return 'Error: not a string: "{working_directory}"'
-    if not isinstance(directory, str):
-        return 'Error: not a string: "{directory}"'
     try:
-        working_directory_abs = os.path.abspath(working_directory)
-    except:
-        return 'Error: could not generate absolute path for "{working_directory}"'
-    try:
-        directory_abs = os.path.abspath(os.path.join(working_directory, directory))
-    except:
-        return 'Error: could not generate absolute path for "{directory}"'
-    if not os.path.isdir(directory_abs):
-        return f'Error: "{directory}" is not a directory'
-    if not os.path.isdir(working_directory_abs):
-        return f'Error: "{working_directory}" is not a directory'
-    if not directory_abs.startswith(working_directory_abs):
-        return f'Error: Cannot list "{directory}" as it is outside the permitted working directory'
-    output = ""
+        working_directory_abs, directory_abs = check_create_abs_paths(working_directory, directory=directory)
+    except (ValueError, FileNotFoundError, PermissionError) as e:
+        return e
+    
+    output = []
     for file in os.listdir(directory_abs):
         file_path = os.path.join(working_directory, directory, file)
         file_path_abs = os.path.join(directory_abs, file)
@@ -30,8 +17,43 @@ def get_files_info(working_directory, directory=""):
         try:
             is_dir = os.path.isdir(file_path_abs)
         except:
-            return f'Error: could not verify if "{file_path}" is a directory'
-        output += f"- {file}: file_size={file_size} bytes, is_dir={is_dir}\n"
-    if output == "":
-        return f'no files found in "{directory}"'
-    return output[:-1]
+            return f'Error: could not verify if "{file_path}" is a directory or not'
+        output.append(f"- {file}: file_size={file_size} bytes, is_dir={is_dir}")
+    if len(output) == 0:
+        output.append(f'no files found in "{directory}"')
+    return "\n".join(output)
+
+
+
+#checks that destination lies inside working_directory. Raises Exception if not and returns abs paths otherwise
+def check_create_abs_paths(working_directory, directory=None, filepath=None):
+    #checks for working directory
+    if not isinstance(working_directory, str):
+        raise ValueError(f'Error: not a string: "{working_directory}"')
+    try:
+        working_directory_abs = os.path.abspath(working_directory)
+    except:
+        raise FileNotFoundError(f'Error: could not generate absolute path for "{working_directory}"')
+    if not os.path.isdir(working_directory_abs):
+        raise FileNotFoundError(f'Error: "{working_directory}" is not a directory')
+    
+    #checks for target
+    if directory is None and filepath is None:
+        raise Exception("missing target input in check_create_abs_paths")
+    is_dir = directory is not None
+    target = directory if is_dir else filepath
+    if not isinstance(target, str):
+        raise ValueError('Error: not a string: "{target}"')
+    try:
+        target_abs = os.path.abspath(os.path.join(working_directory, target))
+    except:
+        raise FileNotFoundError('Error: could not generate absolute path for "{target}"')
+    if is_dir and not os.path.isdir(target_abs):
+        raise FileNotFoundError(f'Error: "{directory}" is not a directory')
+    elif not is_dir and not os.path.isfile(target_abs):
+        raise FileNotFoundError(f'Error: "{filepath}" is not a file')
+    
+    if not target_abs.startswith(working_directory_abs):
+        raise PermissionError(f'Error: Cannot list "{target}" as it is outside the permitted working directory')
+    
+    return working_directory_abs, target_abs
