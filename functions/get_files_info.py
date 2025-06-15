@@ -1,6 +1,25 @@
 import os
 from config import MAX_CHARS
 
+#writes generated content to a file
+def write_file(working_directory, file_path, content):
+    try:
+        working_directory_abs, file_path_abs = check_create_abs_paths(working_directory, file_path=file_path, write=True)
+    except (ValueError, FileNotFoundError, PermissionError) as e:
+        return e
+    try:
+        os.makedirs(os.path.dirname(file_path_abs), exist_ok=True)
+    except:
+        return f'Error: could not generate missing directories for "{file_path}"'
+    if os.path.exists(file_path_abs) and os.path.isdir(file_path_abs):
+        return f'Error: "{file_path}" is a directory, not a file'
+    try:
+        with open(file_path_abs, "w") as f:
+            written_chars = f.write(content)
+    except:
+        return f'Error: could not write to {file_path}'
+    return f'Successfully wrote to "{file_path}" ({written_chars} characters written)'
+
 #returns contents of a file at file_path as a string. Does security checks first
 def get_file_content(working_directory, file_path, max_chars=MAX_CHARS):
     try:
@@ -41,7 +60,7 @@ def get_files_info(working_directory, directory=""):
     return "\n".join(output)
 
 #checks that destination lies inside working_directory. Raises Exception if not and returns abs paths otherwise
-def check_create_abs_paths(working_directory, directory=None, file_path=None):
+def check_create_abs_paths(working_directory, directory=None, file_path=None, write=False):
     #checks for working directory
     if not isinstance(working_directory, str):
         raise ValueError(f'Error: not a string: "{working_directory}"')
@@ -54,7 +73,7 @@ def check_create_abs_paths(working_directory, directory=None, file_path=None):
     
     #checks for target
     if directory is None and file_path is None:
-        raise Exception("missing target input in check_create_abs_paths")
+        raise Exception("Unexpected Error: missing target input in check_create_abs_paths")
     is_dir = directory is not None
     target = directory if is_dir else file_path
     if not isinstance(target, str):
@@ -65,10 +84,10 @@ def check_create_abs_paths(working_directory, directory=None, file_path=None):
         raise FileNotFoundError('Error: could not generate absolute path for "{target}"')
     if is_dir and not os.path.isdir(target_abs):
         raise FileNotFoundError(f'Error: "{directory}" is not a directory')
-    elif not is_dir and not os.path.isfile(target_abs):
+    elif not is_dir and not write and not os.path.isfile(target_abs):
         raise FileNotFoundError(f'Error: "{file_path}" is not a file')
     
     if not target_abs.startswith(working_directory_abs):
-        raise PermissionError(f'Error: Cannot list "{target}" as it is outside the permitted working directory')
-    
+        raise PermissionError(f'Error: Cannot access "{target}" as it is outside the permitted working directory')
+
     return working_directory_abs, target_abs
