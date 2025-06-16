@@ -3,25 +3,29 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from config import SYSTEM_PROMPT
 
 def main():
-    verbose = False
+    verbose = "--verbose" in sys.argv
+    args = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
 
     load_dotenv()
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
     model = "gemini-2.0-flash-001"
-    if len(sys.argv) <= 1:
+    if not args:
         print("error: no prompt given")
-        exit(1)
-    if len(sys.argv) > 2:
-        if "--verbose" in sys.argv[2:]:
-            verbose = True
-    user_prompt = sys.argv[1]
+        print('Example usage: python3 main.py "your prompt here" [--verbose]')
+        sys.exit(1)
+    user_prompt = " ".join(args)
     messages = [
     types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
-    response = client.models.generate_content(model=model, contents=messages)
+    response = client.models.generate_content(
+        model=model,
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
+        )
     if verbose:
         print_verbose(user_prompt, response, model)
     print(response.text)
