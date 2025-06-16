@@ -3,7 +3,7 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from config import SYSTEM_PROMPT
+from config import SYSTEM_PROMPT, AVAILABLE_FUNCTIONS
 
 def main():
     verbose = "--verbose" in sys.argv
@@ -24,11 +24,18 @@ def main():
     response = client.models.generate_content(
         model=model,
         contents=messages,
-        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            tools=[AVAILABLE_FUNCTIONS],
+            )
         )
     if verbose:
         print_verbose(user_prompt, response, model)
-    print(response.text)
+    if response.text:
+        print(response.text)
+    if response.function_calls:
+        for function_call in response.function_calls:
+            print(f"Calling function: {function_call.name}({function_call.args})")
 
 
 def print_verbose(user_prompt, response, model):

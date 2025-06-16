@@ -36,7 +36,9 @@ def get_file_content(working_directory, file_path, max_chars=MAX_CHARS):
     return file_content_string
 
 #returns a list of files in directory as a string. Does security checks first
-def get_files_info(working_directory, directory=""):
+def get_files_info(working_directory, directory=None):
+    if not directory:
+        directory = "."
     try:
         working_directory_abs, directory_abs = check_create_abs_paths(working_directory, directory=directory)
     except (ValueError, FileNotFoundError, PermissionError) as e:
