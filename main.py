@@ -3,7 +3,7 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from config import SYSTEM_PROMPT, AVAILABLE_FUNCTIONS
+from config import WORKING_DIRECTORY, SYSTEM_PROMPT, AVAILABLE_FUNCTIONS
 
 def main():
     verbose = "--verbose" in sys.argv
