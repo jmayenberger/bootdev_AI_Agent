@@ -36,7 +36,7 @@ functions.append(SCHEMA_GET_FILES_INFO)
 
 SCHEMA_GET_FILE_CONTENT = types.FunctionDeclaration(
     name="get_file_content",
-    description="Returns file contents at the specified file path, constrained to the working directory.",
+    description=f"Reads and returns the first {MAX_CHARS} characters of the content from a specified file within the working directory.",
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
@@ -45,6 +45,7 @@ SCHEMA_GET_FILE_CONTENT = types.FunctionDeclaration(
                 description="The path of the file to get the content from, relative to the working directory.",
             ),
         },
+        required=["file_path"],
     ),
 )
 functions.append(SCHEMA_GET_FILE_CONTENT)
@@ -52,7 +53,7 @@ functions.append(SCHEMA_GET_FILE_CONTENT)
 
 SCHEMA_RUN_PYTHON_FILE = types.FunctionDeclaration(
     name="run_python_file",
-    description="Executes a python file at the specified file path with the given input arguments, constrained to the working directory.",
+    description="Executes a python file at the specified file path with the given input arguments. Returns the output from the interpreter .File path constrained to the working directory.",
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
@@ -64,11 +65,12 @@ SCHEMA_RUN_PYTHON_FILE = types.FunctionDeclaration(
                     type=types.Type.ARRAY,
                     items=types.Schema(
                         type=types.Type.STRING,
-                        description="An argument to pass to the file. If no arguemtn is given, file will be executed without arguments."
+                        description="Optional argument to pass to the Python file."
                     ),
-                    description="List of additional arguments for file execution. If not provided, file will be executed without additional arguments.",
+                    description="List of optional arguments to pass to the Python file.",
                 ),
         },
+        required=["file_path"],
     ),
 )
 functions.append(SCHEMA_RUN_PYTHON_FILE)
@@ -76,7 +78,7 @@ functions.append(SCHEMA_RUN_PYTHON_FILE)
 
 SCHEMA_WRITE_FILE = types.FunctionDeclaration(
     name="write_file",
-    description="Writes input content to a file at the specified file path, constrained to the working directory.",
+    description="Writes input content to a file at the specified file path. Constrained to the working directory.",
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
@@ -89,6 +91,7 @@ SCHEMA_WRITE_FILE = types.FunctionDeclaration(
                 description="The content to write into file.",
             ),
         },
+        required=["file_path", "content"],
     ),
 )
 functions.append(SCHEMA_WRITE_FILE)
