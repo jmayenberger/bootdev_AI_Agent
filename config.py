@@ -4,6 +4,8 @@ WORKING_DIRECTORY = "./working_directory"
 
 MAX_CHARS = 1e4
 
+MODEL = "gemini-2.0-flash-001"
+
 SYSTEM_PROMPT = """
 You are a helpful AI coding agent.
 
