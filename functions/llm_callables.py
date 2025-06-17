@@ -1,7 +1,9 @@
 import os
+import subprocess
 from config import MAX_CHARS
+from functions.internal import check_create_abs_paths
 
-#writes generated content to a file
+# Writes input content to a file at the specified file path. Constrained to the working directory
 def write_file(working_directory, file_path, content):
     try:
         working_directory_abs, file_path_abs = check_create_abs_paths(working_directory, file_path=file_path, write=True)
@@ -20,7 +22,7 @@ def write_file(working_directory, file_path, content):
         return f'Error: could not write to {file_path}'
     return f'Successfully wrote to "{file_path}" ({written_chars} characters written)'
 
-#returns contents of a file at file_path as a string. Does security checks first
+# Reads and returns the first MAX_CHARS characters of the content from a specified file within the working directory
 def get_file_content(working_directory, file_path, max_chars=MAX_CHARS):
     try:
         working_directory_abs, file_path_abs = check_create_abs_paths(working_directory, file_path=file_path)
@@ -35,7 +37,7 @@ def get_file_content(working_directory, file_path, max_chars=MAX_CHARS):
         file_content_string += f'\nFile "{file_path}" truncated at {max_chars} characters'
     return file_content_string
 
-#returns a list of files in directory as a string. Does security checks first
+# Lists files in the specified directory along with their sizes, constrained to the working directory
 def get_files_info(working_directory, directory=None):
     if not directory:
         directory = "."
@@ -61,35 +63,35 @@ def get_files_info(working_directory, directory=None):
         output.append(f'no files found in "{directory}"')
     return "\n".join(output)
 
-#checks that destination lies inside working_directory. Raises Exception if not and returns abs paths otherwise
-def check_create_abs_paths(working_directory, directory=None, file_path=None, write=False):
-    #checks for working directory
-    if not isinstance(working_directory, str):
-        raise ValueError(f'Error: not a string: "{working_directory}"')
+# Executes a python file at the specified file path with the given input arguments. Returns the output from the interpreter .File path constrained to the working directory
+def run_python_file(working_directory, file_path, args=[]):
     try:
-        working_directory_abs = os.path.abspath(working_directory)
-    except:
-        raise FileNotFoundError(f'Error: could not generate absolute path for "{working_directory}"')
-    if not os.path.isdir(working_directory_abs):
-        raise FileNotFoundError(f'Error: "{working_directory}" is not a directory')
+        working_directory_abs, file_path_abs = check_create_abs_paths(working_directory, file_path=file_path)
+    except (ValueError, FileNotFoundError, PermissionError) as e:
+        return e
     
-    #checks for target
-    if directory is None and file_path is None:
-        raise Exception("Unexpected Error: missing target input in check_create_abs_paths")
-    is_dir = directory is not None
-    target = directory if is_dir else file_path
-    if not isinstance(target, str):
-        raise ValueError('Error: not a string: "{target}"')
+    if not file_path_abs.endswith(".py"):
+        return f'Error: {file_path} is not a Python file'
     try:
-        target_abs = os.path.abspath(os.path.join(working_directory, target))
-    except:
-        raise FileNotFoundError('Error: could not generate absolute path for "{target}"')
-    if is_dir and not os.path.isdir(target_abs):
-        raise FileNotFoundError(f'Error: "{directory}" is not a directory')
-    elif not is_dir and not write and not os.path.isfile(target_abs):
-        raise FileNotFoundError(f'Error: "{file_path}" is not a file')
-    
-    if not target_abs.startswith(working_directory_abs):
-        raise PermissionError(f'Error: Cannot access "{target}" as it is outside the permitted working directory')
+        command = ["python3", file_path_abs] + args
+        completed_process = subprocess.run(
+            command,
+            capture_output=True,
+            timeout=30,
+            text=True,
+            cwd=working_directory_abs
+            )
+    except Exception as e:
+        return f"Error: executing Python file: {e}"
 
-    return working_directory_abs, target_abs
+    out = f'Executed "python3 {file_path} {" ".join(args)}\n"'
+    if completed_process.returncode != 0:
+        out += f"Process exited with code {completed_process.returncode}"
+    else:
+        if completed_process.stdout:
+            out += f"STDOUT: {completed_process.stdout}\n"
+        if completed_process.stderr:
+            out += f"STDERR: {completed_process.stderr}\n"
+        if not completed_process.stdout and not completed_process.stderr:
+            out += "No output produced.\n"
+    return out
