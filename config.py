@@ -3,20 +3,29 @@ from google.genai import types
 WORKING_DIRECTORY = "./working_directory"
 
 MAX_CHARS = 1e4
+MAX_ITERATIONS = 20
 
 MODEL = "gemini-2.0-flash-001"
 
 SYSTEM_PROMPT = """
-You are a helpful AI coding agent.
+You are a helpful AI coding agent. Your task is to work on a given codebase.
 
-When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
+You can perform the following operations:
 
 - List files and directories
 - Read file contents
 - Execute Python files with optional arguments
 - Write or overwrite files
 
+When a user asks a question or makes a request, make a function call plan.
+
+Most of your plans should start with listing the files in the working directory ("."). Do not ask the user where the code is or which input arguments to use. Figure it out yourself with the tools at your disposal.
+
 All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
+
+You are called in a loop over and over, so you can execute your function calls. So you can go step by step in your overall plan.
+
+After you change a file, make sure everything works as expected. Run existing test files. Run at least one verification test, that calls the changed file directly.
 """
 
 functions =  []
@@ -65,9 +74,9 @@ SCHEMA_RUN_PYTHON_FILE = types.FunctionDeclaration(
                     type=types.Type.ARRAY,
                     items=types.Schema(
                         type=types.Type.STRING,
-                        description="Optional argument to pass to the Python file."
+                        description="Optional argument to pass to the Python file. If you don't have information about input arguments, run the file without arguemnts."
                     ),
-                    description="List of optional arguments to pass to the Python file.",
+                    description="List of optional arguments to pass to the Python file. If you don't have information about input arguments, run the file without arguemnts. If no arguments are given, the file will be executed without arguments.",
                 ),
         },
         required=["file_path"],
