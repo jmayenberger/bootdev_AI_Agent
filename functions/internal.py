@@ -69,21 +69,22 @@ def generate_content(client, messages, verbose, supress):
     for candidate in response.candidates:
         messages.append(candidate.content)
 
-    function_call_results = []
-    for function_call_part in response.function_calls:
-        function_call_result = call_function(function_call_part, verbose, supress)
-        if function_call_result.parts[0].function_response.response: # type: ignore
-            function_call_results.append(function_call_result.parts[0]) #type: ignore
-            if not supress:
-                print(f'Tool: "Here is the result of of {function_call_part.name}"\n')
-            if verbose:
-                print(f"System:")
-                print(f"{function_call_result.parts[0].function_response.response["result"]}\n") # type: ignore
-            
-        else:
-            raise Exception("Unexpected error: function call without response")
+    if response.function_calls:
+        function_call_results = []
+        for function_call_part in response.function_calls:
+            function_call_result = call_function(function_call_part, verbose, supress)
+            if function_call_result.parts[0].function_response.response: # type: ignore
+                function_call_results.append(function_call_result.parts[0]) #type: ignore
+                if not supress:
+                    print(f'Tool: "Here is the result of of {function_call_part.name}"\n')
+                if verbose:
+                    print(f"System:")
+                    print(f"{function_call_result.parts[0].function_response.response["result"]}\n") # type: ignore
+                
+            else:
+                raise Exception("Unexpected error: function call without response")
     
-    messages.append(types.Content(role="tool", parts=function_call_results))
+        messages.append(types.Content(role="tool", parts=function_call_results))
 
     return response, messages
 
